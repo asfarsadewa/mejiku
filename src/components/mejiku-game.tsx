@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GAME_COLORS } from "@/lib/colors";
-import { Cell, Grid, Difficulty } from "@/types/game";
+import type { Grid, Difficulty } from "@/types/game";
 import { generatePuzzle, checkWin, checkPlacement } from "@/lib/game-logic";
 import type p5 from "p5";
 
@@ -21,60 +21,6 @@ type AnimatingCell = {
   startTime: number;
   color: string;
 };
-
-// Update ColorCircle component
-function ColorCircle({ 
-  color, 
-  patternType, 
-  size,
-  isSelected 
-}: { 
-  color: string, 
-  patternType: number,
-  size: number,
-  isSelected: boolean
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const p5InstanceRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    // Dynamically import p5 inside the effect
-    import("p5").then((p5Module) => {
-      const p5 = p5Module.default;
-      
-      // Create a new p5 instance for each color circle
-      const sketch = new p5((p: any) => {
-        p.setup = () => {
-          const canvas = p.createCanvas(size, size);
-          canvas.parent(containerRef.current!);
-        };
-
-        p.draw = () => {
-          p.clear();
-          drawCellPattern(p, size/2, size/2, size, color, patternType, false, false);
-        };
-      }, containerRef.current);
-
-      p5InstanceRef.current = sketch;
-    });
-
-    return () => {
-      if (p5InstanceRef.current) {
-        p5InstanceRef.current.remove();
-      }
-    };
-  }, [color, patternType, size]);
-
-  return (
-    <div 
-      ref={containerRef} 
-      className="absolute inset-0"
-      style={{ width: size, height: size }}
-    />
-  );
-}
 
 // Update ColorPalette component
 function ColorPalette({ 
@@ -145,7 +91,7 @@ export function MejikuGame() {
   const [cellSize, setCellSize] = useState(BASE_CELL_SIZE);
   const [errorCell, setErrorCell] = useState<[number, number] | null>(null);
   const errorTimeoutRef = useRef<NodeJS.Timeout>();
-  const p5Instance = useRef<any>(null);
+  const p5Instance = useRef<p5>();
   const animatingCellsRef = useRef<AnimatingCell[]>([]);
   const [triggerRender, setTriggerRender] = useState(0);
 
