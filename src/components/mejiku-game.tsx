@@ -568,52 +568,57 @@ function WinCelebration({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!containerRef.current) return;
     
-    const sketch = (p: P5) => {
-      const particles: Array<{
-        x: number;
-        y: number;
-        vx: number;
-        vy: number;
-        color: string;
-        size: number;
-      }> = [];
+    // Dynamically import p5
+    import("p5").then((p5Module) => {
+      const p5Constructor = p5Module.default;
       
-      p.setup = () => {
-        const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
-        canvas.parent(containerRef.current!);
+      const sketch = (p: P5) => {
+        const particles: Array<{
+          x: number;
+          y: number;
+          vx: number;
+          vy: number;
+          color: string;
+          size: number;
+        }> = [];
         
-        // Create initial particles
-        for (let i = 0; i < 100; i++) {
-          particles.push({
-            x: p.width / 2,
-            y: p.height / 2,
-            vx: p.random(-5, 5),
-            vy: p.random(-5, 5),
-            color: GAME_COLORS[Math.floor(p.random(9))].value,
-            size: p.random(5, 15)
-          });
-        }
-      };
-      
-      p.draw = () => {
-        p.clear();
-        
-        particles.forEach(particle => {
-          // Update
-          particle.x += particle.vx;
-          particle.y += particle.vy;
-          particle.vy += 0.1; // gravity
+        p.setup = () => {
+          const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+          canvas.parent(containerRef.current!);
           
-          // Draw
-          p.fill(particle.color);
-          p.noStroke();
-          p.circle(particle.x, particle.y, particle.size);
-        });
+          // Create initial particles
+          for (let i = 0; i < 100; i++) {
+            particles.push({
+              x: p.width / 2,
+              y: p.height / 2,
+              vx: p.random(-5, 5),
+              vy: p.random(-5, 5),
+              color: GAME_COLORS[Math.floor(p.random(9))].value,
+              size: p.random(5, 15)
+            });
+          }
+        };
+        
+        p.draw = () => {
+          p.clear();
+          
+          particles.forEach(particle => {
+            // Update
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.vy += 0.1; // gravity
+            
+            // Draw
+            p.fill(particle.color);
+            p.noStroke();
+            p.circle(particle.x, particle.y, particle.size);
+          });
+        };
       };
-    };
-    
-    const p5Instance = new P5(sketch);
-    return () => p5Instance.remove();
+      
+      const p5Instance = new p5Constructor(sketch);
+      return () => p5Instance.remove();
+    });
   }, []);
   
   return (
