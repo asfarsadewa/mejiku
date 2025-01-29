@@ -8,11 +8,13 @@ import type { Grid, Difficulty } from "@/types/game";
 import { generatePuzzle, checkWin, checkPlacement } from "@/lib/game-logic";
 import type P5 from "p5";
 
-// Make grid size responsive
+// Update constants at the top
 const GRID_SIZE = 9;
-const BASE_CELL_SIZE = 50; // Desktop size
-const MIN_CELL_SIZE = 35; // Mobile size
-const GRID_PADDING = 20;
+const BASE_CELL_SIZE = 50;
+const MIN_CELL_SIZE = 35;
+const GRID_PADDING = 16;
+const CONTAINER_PADDING = 16;
+const CARD_PADDING = 16;
 const ANIMATION_DURATION = 300; // ms
 
 type AnimatingCell = {
@@ -94,6 +96,9 @@ export function MejikuGame() {
   const p5Instance = useRef<P5 | undefined>(undefined);
   const animatingCellsRef = useRef<AnimatingCell[]>([]);
   const [triggerRender, setTriggerRender] = useState(0);
+  const isMounted = useRef(false);
+  const cleanup = useRef<(() => void) | null>(null);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
 
   // Clear error after delay
   useEffect(() => {
@@ -112,101 +117,163 @@ export function MejikuGame() {
     };
   }, [errorCell]);
 
-  // Responsive grid sizing
+  // Move resize logic to a separate function
+  const calculateCellSize = () => {
+    if (!containerRef.current) return BASE_CELL_SIZE;
+    
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const totalPadding = GRID_PADDING * 2 + CONTAINER_PADDING + CARD_PADDING;
+    const maxGridWidth = screenWidth - totalPadding;
+    const maxGridHeight = screenHeight * 0.6;
+    
+    const calculatedCellSize = Math.min(
+      Math.floor((maxGridWidth - 2) / GRID_SIZE), // Subtract 2 for border
+      Math.floor(maxGridHeight / GRID_SIZE),
+      BASE_CELL_SIZE
+    );
+
+    return Math.max(calculatedCellSize, MIN_CELL_SIZE);
+  };
+
+  // Handle layout initialization
   useEffect(() => {
     const handleResize = () => {
-      if (!containerRef.current) return;
-      
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-      const maxGridWidth = screenWidth - 32; // Account for padding
-      const maxGridHeight = screenHeight * 0.6; // Use 60% of viewport height
-      
-      const calculatedCellSize = Math.min(
-        Math.floor(maxGridWidth / GRID_SIZE),
-        Math.floor(maxGridHeight / GRID_SIZE),
-        BASE_CELL_SIZE
-      );
-
-      setCellSize(Math.max(calculatedCellSize, MIN_CELL_SIZE));
+      setCellSize(calculateCellSize());
+      setIsLayoutReady(true);
     };
 
+    // Initial calculation
     handleResize();
+
+    // Add resize listener
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Ensure layout is ready after a short delay on mobile
+    const timeoutId = setTimeout(handleResize, 100);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  // Add this effect to handle mounting
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      // Clean up on unmount
+      if (cleanup.current) {
+        cleanup.current();
+        cleanup.current = null;
+      }
+      // Also remove any canvas elements to be extra safe
+      if (containerRef.current) {
+        const canvases = containerRef.current.getElementsByTagName('canvas');
+        Array.from(canvases).forEach(canvas => canvas.remove());
+      }
+    };
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isMounted.current || !isLayoutReady) return;
+
+    // Clean up any existing p5 instance first
+    if (cleanup.current) {
+      cleanup.current();
+      cleanup.current = null;
+    }
+
+    // Remove any existing canvases
+    const canvases = containerRef.current.getElementsByTagName('canvas');
+    Array.from(canvases).forEach(canvas => canvas.remove());
 
     let p5Constructor: typeof P5;
 
-    // Dynamically import p5 only on client side
-    import("p5").then((p5Module) => {
-      p5Constructor = p5Module.default;
+    const setupP5 = async () => {
+      try {
+        const p5Module = await import("p5");
+        if (!isMounted.current) return; // Don't proceed if unmounted
 
-      const sketch = (p: P5) => {
-        p.setup = () => {
-          const canvas = p.createCanvas(
-            GRID_SIZE * cellSize + GRID_PADDING * 2,
-            GRID_SIZE * cellSize + GRID_PADDING * 2
-          );
-          canvas.parent(containerRef.current!);
-        };
+        p5Constructor = p5Module.default;
+        const sketch = (p: P5) => {
+          p.setup = () => {
+            const canvas = p.createCanvas(
+              GRID_SIZE * cellSize + GRID_PADDING * 2,
+              GRID_SIZE * cellSize + GRID_PADDING * 2
+            );
+            canvas.parent(containerRef.current!);
+          };
 
-        p.draw = () => {
-          p.background(255);
-          drawGrid(p, cellSize);
-          
-          // Clean up animations in the draw loop
-          const currentTime = Date.now();
-          animatingCellsRef.current = animatingCellsRef.current.filter(
-            anim => (currentTime - anim.startTime) < ANIMATION_DURATION
-          );
-          
-          drawCells(p, grid, selectedCell, errorCell, cellSize, animatingCellsRef.current);
-        };
+          p.draw = () => {
+            p.background(255);
+            drawGrid(p, cellSize);
+            
+            // Clean up animations in the draw loop
+            const currentTime = Date.now();
+            animatingCellsRef.current = animatingCellsRef.current.filter(
+              anim => (currentTime - anim.startTime) < ANIMATION_DURATION
+            );
+            
+            drawCells(p, grid, selectedCell, errorCell, cellSize, animatingCellsRef.current);
+          };
 
-        p.mousePressed = () => {
-          const mouseX = p.mouseX - GRID_PADDING;
-          const mouseY = p.mouseY - GRID_PADDING;
+          p.mousePressed = () => {
+            const mouseX = p.mouseX - GRID_PADDING;
+            const mouseY = p.mouseY - GRID_PADDING;
 
-          if (mouseX >= 0 && mouseY >= 0) {
-            const cellX = Math.floor(mouseX / cellSize);
-            const cellY = Math.floor(mouseY / cellSize);
+            if (mouseX >= 0 && mouseY >= 0) {
+              const cellX = Math.floor(mouseX / cellSize);
+              const cellY = Math.floor(mouseY / cellSize);
 
-            if (cellX < GRID_SIZE && cellY < GRID_SIZE) {
-              if (!grid[cellY][cellX].isFixed) {
-                if (selectedCell && selectedCell[0] === cellX && selectedCell[1] === cellY) {
-                  // If clicking the same cell, remove its value
-                  const newGrid = [...grid.map(row => [...row])];
-                  newGrid[cellY][cellX] = { ...newGrid[cellY][cellX], value: null };
-                  setGrid(newGrid);
-                  setSelectedCell(null);
-                  setSelectedColor(null);
-                } else {
-                  // Select the cell
-                  setSelectedCell([cellX, cellY]);
-                  // If a color is selected, place it
-                  if (selectedColor !== null) {
-                    handleColorSelect(selectedColor);
+              if (cellX < GRID_SIZE && cellY < GRID_SIZE) {
+                if (!grid[cellY][cellX].isFixed) {
+                  if (selectedCell && selectedCell[0] === cellX && selectedCell[1] === cellY) {
+                    // If clicking the same cell, remove its value
+                    const newGrid = [...grid.map(row => [...row])];
+                    newGrid[cellY][cellX] = { ...newGrid[cellY][cellX], value: null };
+                    setGrid(newGrid);
+                    setSelectedCell(null);
+                    setSelectedColor(null);
+                  } else {
+                    // Select the cell
+                    setSelectedCell([cellX, cellY]);
+                    // If a color is selected, place it
+                    if (selectedColor !== null) {
+                      handleColorSelect(selectedColor);
+                    }
                   }
                 }
               }
             }
-          }
+          };
         };
-      };
 
-      p5Instance.current = new p5Constructor(sketch);
-    });
-
-    return () => {
-      if (p5Instance.current) {
-        p5Instance.current.remove();
+        if (containerRef.current && isMounted.current) {
+          p5Instance.current = new p5Constructor(sketch);
+          
+          cleanup.current = () => {
+            if (p5Instance.current) {
+              p5Instance.current.remove();
+              p5Instance.current = undefined;
+            }
+          };
+        }
+      } catch (error) {
+        console.error('Error setting up p5:', error);
       }
     };
-  }, [grid, selectedCell, errorCell, cellSize, triggerRender]);
+
+    setupP5();
+
+    return () => {
+      if (cleanup.current) {
+        cleanup.current();
+        cleanup.current = null;
+      }
+    };
+  }, [grid, selectedCell, errorCell, cellSize, triggerRender, isLayoutReady]);
 
   const handleColorSelect = (colorIndex: number) => {
     if (!selectedCell) return;
@@ -346,10 +413,15 @@ export function MejikuGame() {
       </Card>
       
       <Card className="w-full mb-4">
-        <CardContent className="p-4 flex justify-center">
+        <CardContent className="p-2 flex justify-center">
           <div
             ref={containerRef}
-            className="border border-gray-200 rounded-lg shadow-lg"
+            className="border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            style={{ 
+              width: isLayoutReady ? `${GRID_SIZE * cellSize + GRID_PADDING * 2}px` : 'auto',
+              height: isLayoutReady ? `${GRID_SIZE * cellSize + GRID_PADDING * 2}px` : 'auto',
+              maxWidth: `calc(100% - ${CARD_PADDING}px)`
+            }}
           />
         </CardContent>
       </Card>
