@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GAME_COLORS } from "@/lib/colors";
 import type { Grid, Difficulty } from "@/types/game";
 import { generatePuzzle, checkWin, checkPlacement } from "@/lib/game-logic";
-import type p5 from "p5";
+import type P5 from "p5";
 
 // Make grid size responsive
 const GRID_SIZE = 9;
@@ -91,7 +91,7 @@ export function MejikuGame() {
   const [cellSize, setCellSize] = useState(BASE_CELL_SIZE);
   const [errorCell, setErrorCell] = useState<[number, number] | null>(null);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const p5Instance = useRef<p5 | undefined>(undefined);
+  const p5Instance = useRef<P5 | undefined>(undefined);
   const animatingCellsRef = useRef<AnimatingCell[]>([]);
   const [triggerRender, setTriggerRender] = useState(0);
 
@@ -139,13 +139,13 @@ export function MejikuGame() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    let p5: typeof import("p5").default;
+    let p5Constructor: typeof P5;
 
     // Dynamically import p5 only on client side
     import("p5").then((p5Module) => {
-      p5 = p5Module.default;
+      p5Constructor = p5Module.default;
 
-      const sketch = (p: p5) => {
+      const sketch = (p: P5) => {
         p.setup = () => {
           const canvas = p.createCanvas(
             GRID_SIZE * cellSize + GRID_PADDING * 2,
@@ -198,7 +198,7 @@ export function MejikuGame() {
         };
       };
 
-      p5Instance.current = new p5(sketch);
+      p5Instance.current = new p5Constructor(sketch);
     });
 
     return () => {
@@ -372,7 +372,7 @@ export function MejikuGame() {
   );
 }
 
-function drawGrid(p: p5, cellSize: number) {
+function drawGrid(p: P5, cellSize: number) {
   p.stroke(0);
   p.strokeWeight(1);
 
@@ -399,7 +399,7 @@ function drawGrid(p: p5, cellSize: number) {
 }
 
 function drawCells(
-  p: p5, 
+  p: P5, 
   grid: Grid, 
   selectedCell: [number, number] | null,
   errorCell: [number, number] | null,
@@ -466,7 +466,7 @@ function drawCells(
 
 // Enhanced pattern drawing function
 function drawCellPattern(
-  p: p5, 
+  p: P5, 
   x: number, 
   y: number, 
   size: number, 
@@ -568,7 +568,7 @@ function WinCelebration({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!containerRef.current) return;
     
-    const sketch = (p: p5) => {
+    const sketch = (p: P5) => {
       const particles: Array<{
         x: number;
         y: number;
@@ -612,7 +612,7 @@ function WinCelebration({ onClose }: { onClose: () => void }) {
       };
     };
     
-    const p5Instance = new p5(sketch);
+    const p5Instance = new P5(sketch);
     return () => p5Instance.remove();
   }, []);
   
