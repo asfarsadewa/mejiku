@@ -91,23 +91,25 @@ function ColorPalette({
       {colors.map((color, index) => (
         <button
           key={color.name}
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-transform hover:scale-105 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-transform hover:scale-105 relative ${
             selectedColor === index ? 'scale-110 ring-2 ring-black' : ''
           }`}
           onClick={() => onColorSelect(index)}
           title={color.name}
           style={{ 
             backgroundColor: color.value,
-            position: 'relative',
-            overflow: 'hidden'
           }}
         >
-          <div 
-            className="absolute inset-0 flex items-center justify-center"
-            style={{
-              background: `radial-gradient(circle, transparent 60%, ${color.value} 60%)`,
-            }}
-          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-wrap justify-center items-center w-3/4 h-3/4">
+              {[...Array(index + 1)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white m-0.5"
+                />
+              ))}
+            </div>
+          </div>
         </button>
       ))}
     </div>
@@ -229,7 +231,21 @@ export function MejikuGame() {
 
             if (cellX < GRID_SIZE && cellY < GRID_SIZE) {
               if (!grid[cellY][cellX].isFixed) {
-                setSelectedCell([cellX, cellY]);
+                if (selectedCell && selectedCell[0] === cellX && selectedCell[1] === cellY) {
+                  // If clicking the same cell, remove its value
+                  const newGrid = [...grid.map(row => [...row])];
+                  newGrid[cellY][cellX] = { ...newGrid[cellY][cellX], value: null };
+                  setGrid(newGrid);
+                  setSelectedCell(null);
+                  setSelectedColor(null);
+                } else {
+                  // Select the cell
+                  setSelectedCell([cellX, cellY]);
+                  // If a color is selected, place it
+                  if (selectedColor !== null) {
+                    handleColorSelect(selectedColor);
+                  }
+                }
               }
             }
           }
@@ -254,7 +270,18 @@ export function MejikuGame() {
 
     const newGrid = [...grid.map(row => [...row])];
     const oldValue = newGrid[y][x].value;
+
+    // Clear cell if clicking the same color that's already there
+    if (oldValue === colorIndex) {
+      newGrid[y][x] = { ...newGrid[y][x], value: null };
+      setGrid(newGrid);
+      setSelectedCell(null); // Clear selection after removing
+      setSelectedColor(null); // Clear selected color
+      return;
+    }
+    
     newGrid[y][x] = { ...newGrid[y][x], value: colorIndex };
+    setSelectedColor(colorIndex); // Set the selected color
     
     // Add animation using ref
     animatingCellsRef.current = [...animatingCellsRef.current, {
@@ -263,16 +290,13 @@ export function MejikuGame() {
       startTime: Date.now(),
       color: GAME_COLORS[colorIndex].value
     }];
-    setTriggerRender(prev => prev + 1); // Force a render
+    setTriggerRender(prev => prev + 1);
     
     // Check if the placement is valid
     const isValid = checkPlacement(newGrid, y, x, colorIndex);
     
     if (!isValid) {
-      // Show error feedback
       setErrorCell([x, y]);
-      // Optionally revert the move
-      // newGrid[y][x].value = oldValue;
     } else {
       setErrorCell(null);
     }
@@ -514,76 +538,71 @@ function drawCellPattern(
   p.noStroke();
   p.circle(0, 0, size * (isFixed ? 0.75 : 0.8));
   
-  // Add pattern based on color index
-  p.stroke(isFixed ? 255 : 'rgba(255,255,255,0.5)');
-  p.strokeWeight(isFixed ? 1.5 : 1);
+  // Draw dots
+  p.fill(255); // White dots
+  p.noStroke();
   
-  switch (patternType) {
-    case 0: // Dots in circle
-      for (let i = 0; i < 6; i++) {
-        const angle = (i / 6) * p.TWO_PI;
-        const r = size * 0.25;
-        p.point(r * p.cos(angle), r * p.sin(angle));
+  const dotCount = patternType + 1; // 1 to 9 dots
+  const dotSize = size * 0.1; // Dot size relative to cell size
+  
+  if (dotCount === 1) {
+    // Single dot in center
+    p.circle(0, 0, dotSize);
+  } else if (dotCount === 2) {
+    // Two dots diagonal
+    p.circle(-size * 0.15, -size * 0.15, dotSize);
+    p.circle(size * 0.15, size * 0.15, dotSize);
+  } else if (dotCount === 3) {
+    // Three dots in triangle
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * p.TWO_PI / 3) + p.PI / 6;
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+  } else if (dotCount === 4) {
+    // Four dots in square
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * p.TWO_PI / 4) + p.PI / 4;
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+  } else if (dotCount === 5) {
+    // Five dots like dice
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * p.TWO_PI / 4) + p.PI / 4;
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+    p.circle(0, 0, dotSize); // Center dot
+  } else if (dotCount === 6) {
+    // Six dots in hexagon
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * p.TWO_PI / 6);
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+  } else if (dotCount === 7) {
+    // Six dots in hexagon plus center
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * p.TWO_PI / 6);
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+    p.circle(0, 0, dotSize); // Center dot
+  } else if (dotCount === 8) {
+    // Eight dots in octagon
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * p.TWO_PI / 8);
+      const r = size * 0.2;
+      p.circle(r * p.cos(angle), r * p.sin(angle), dotSize);
+    }
+  } else if (dotCount === 9) {
+    // Nine dots in 3x3 grid
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        p.circle(i * size * 0.15, j * size * 0.15, dotSize);
       }
-      break;
-    case 1: // Cross lines
-      const r1 = size * 0.3;
-      p.line(-r1, -r1, r1, r1);
-      p.line(-r1, r1, r1, -r1);
-      break;
-    case 2: // Concentric circles
-      for (let r = size * 0.15; r <= size * 0.3; r += size * 0.15) {
-        p.noFill();
-        p.circle(0, 0, r * 2);
-      }
-      break;
-    case 3: // Triangles
-      const r2 = size * 0.25;
-      for (let i = 0; i < 3; i++) {
-        const angle = (i / 3) * p.TWO_PI;
-        const x1 = r2 * p.cos(angle);
-        const y1 = r2 * p.sin(angle);
-        p.point(x1, y1);
-      }
-      break;
-    case 4: // Square
-      const s = size * 0.3;
-      p.noFill();
-      p.rect(-s/2, -s/2, s, s);
-      break;
-    case 5: // Parallel lines
-      const r3 = size * 0.3;
-      for (let i = -2; i <= 2; i++) {
-        p.line(i * 4, -r3, i * 4, r3);
-      }
-      break;
-    case 6: // Diamond
-      const r4 = size * 0.3;
-      p.noFill();
-      p.beginShape();
-      p.vertex(0, -r4);
-      p.vertex(r4, 0);
-      p.vertex(0, r4);
-      p.vertex(-r4, 0);
-      p.endShape(p.CLOSE);
-      break;
-    case 7: // Star
-      const r5 = size * 0.3;
-      for (let i = 0; i < 4; i++) {
-        const angle = (i / 4) * p.TWO_PI;
-        p.line(0, 0, r5 * p.cos(angle), r5 * p.sin(angle));
-      }
-      break;
-    case 8: // Zigzag
-      const r6 = size * 0.2;
-      p.beginShape();
-      for (let i = 0; i < 6; i++) {
-        const x = ((i - 2.5) * r6/2);
-        const y = (i % 2 ? r6 : -r6);
-        p.vertex(x, y);
-      }
-      p.endShape();
-      break;
+    }
   }
   
   // Add border for fixed cells
