@@ -9,41 +9,6 @@ export function createEmptyGrid(): Grid {
   );
 }
 
-function isValid(grid: Grid, row: number, col: number, num: number): boolean {
-  // Check row
-  for (let x = 0; x < 9; x++) {
-    if (grid[row][x].value === num) return false;
-  }
-
-  // Check column
-  for (let x = 0; x < 9; x++) {
-    if (grid[x][col].value === num) return false;
-  }
-
-  // Check 3x3 box
-  const startRow = row - (row % 3);
-  const startCol = col - (col % 3);
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (grid[i + startRow][j + startCol].value === num) return false;
-    }
-  }
-
-  return true;
-}
-
-// Helper function to find an empty cell
-function findEmptyCell(grid: Grid): [number, number] | null {
-  for (let row = 0; row < 9; row++) {
-    for (let col = 0; col < 9; col++) {
-      if (grid[row][col].value === null) {
-        return [row, col];
-      }
-    }
-  }
-  return null;
-}
-
 export function generatePuzzle(difficulty: Difficulty): Grid {
   const grid: Grid = Array(9).fill(null).map(() => 
     Array(9).fill(null).map(() => ({ value: null, isFixed: false }))
