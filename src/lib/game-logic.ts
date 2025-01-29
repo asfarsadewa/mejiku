@@ -1,5 +1,4 @@
 import type { Grid, Difficulty } from "@/types/game";
-import { GAME_COLORS } from "@/lib/colors";
 
 export function createEmptyGrid(): Grid {
   return Array(9).fill(null).map(() =>
@@ -22,7 +21,8 @@ function isValid(grid: Grid, row: number, col: number, num: number): boolean {
   }
 
   // Check 3x3 box
-  let startRow = row - (row % 3), startCol = col - (col % 3);
+  const startRow = row - (row % 3);
+  const startCol = col - (col % 3);
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       if (grid[i + startRow][j + startCol].value === num) return false;
@@ -42,54 +42,6 @@ function findEmptyCell(grid: Grid): [number, number] | null {
     }
   }
   return null;
-}
-
-// Improved solver that returns all possible solutions
-function countSolutions(grid: Grid, limit: number = 2): number {
-  let solutions = 0;
-  const empty = findEmptyCell(grid);
-  
-  if (!empty) return 1; // Grid is filled
-  
-  const [row, col] = empty;
-  
-  // Try each number
-  for (let num = 0; num < 9; num++) {
-    if (isValid(grid, row, col, num)) {
-      grid[row][col].value = num;
-      solutions += countSolutions(grid, limit - solutions);
-      grid[row][col].value = null;
-      
-      if (solutions >= limit) break; // Stop if we found enough solutions
-    }
-  }
-  
-  return solutions;
-}
-
-// Generate a complete valid solution
-function generateSolution(grid: Grid): boolean {
-  const empty = findEmptyCell(grid);
-  if (!empty) return true;
-  
-  const [row, col] = empty;
-  const numbers = Array.from({length: 9}, (_, i) => i);
-  
-  // Shuffle numbers for randomization
-  for (let i = numbers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-  }
-  
-  for (const num of numbers) {
-    if (isValid(grid, row, col, num)) {
-      grid[row][col].value = num;
-      if (generateSolution(grid)) return true;
-      grid[row][col].value = null;
-    }
-  }
-  
-  return false;
 }
 
 export function generatePuzzle(difficulty: Difficulty): Grid {
