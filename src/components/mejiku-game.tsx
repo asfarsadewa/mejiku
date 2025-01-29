@@ -99,6 +99,7 @@ export function MejikuGame() {
   const isMounted = useRef(false);
   const cleanup = useRef<(() => void) | null>(null);
   const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const lastTapRef = useRef<{ time: number; cell: [number, number] } | null>(null);
 
   // Clear error after delay
   useEffect(() => {
@@ -229,25 +230,52 @@ export function MejikuGame() {
 
               if (cellX < GRID_SIZE && cellY < GRID_SIZE) {
                 if (!grid[cellY][cellX].isFixed) {
-                  if (selectedCell && selectedCell[0] === cellX && selectedCell[1] === cellY) {
-                    // If clicking the same cell, remove its value
+                  // Right click to remove (desktop)
+                  if (p.mouseButton === p.RIGHT) {
                     const newGrid = [...grid.map(row => [...row])];
                     newGrid[cellY][cellX] = { ...newGrid[cellY][cellX], value: null };
                     setGrid(newGrid);
                     setSelectedCell(null);
                     setSelectedColor(null);
-                  } else {
-                    // Select the cell
-                    setSelectedCell([cellX, cellY]);
-                    // If a color is selected, place it
-                    if (selectedColor !== null) {
-                      handleColorSelect(selectedColor);
-                    }
+                    return;
+                  }
+
+                  // Double tap to remove (mobile)
+                  const now = Date.now();
+                  const lastTap = lastTapRef.current;
+                  
+                  if (lastTap && 
+                      now - lastTap.time < 300 && // 300ms between taps
+                      lastTap.cell[0] === cellX && 
+                      lastTap.cell[1] === cellY &&
+                      grid[cellY][cellX].value !== null) {
+                    // Double tap on same cell - remove value
+                    const newGrid = [...grid.map(row => [...row])];
+                    newGrid[cellY][cellX] = { ...newGrid[cellY][cellX], value: null };
+                    setGrid(newGrid);
+                    setSelectedCell(null);
+                    setSelectedColor(null);
+                    lastTapRef.current = null;
+                    return;
+                  }
+
+                  // Store this tap
+                  lastTapRef.current = { time: now, cell: [cellX, cellY] };
+
+                  // Normal click to select/place
+                  setSelectedCell([cellX, cellY]);
+                  if (selectedColor !== null) {
+                    handleColorSelect(selectedColor);
                   }
                 }
               }
             }
           };
+
+          // Prevent context menu on right click
+          p.canvas?.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+          });
         };
 
         if (containerRef.current && isMounted.current) {
@@ -282,21 +310,12 @@ export function MejikuGame() {
     if (grid[y][x].isFixed) return;
 
     const newGrid = [...grid.map(row => [...row])];
-    const oldValue = newGrid[y][x].value;
-
-    // Clear cell if clicking the same color that's already there
-    if (oldValue === colorIndex) {
-      newGrid[y][x] = { ...newGrid[y][x], value: null };
-      setGrid(newGrid);
-      setSelectedCell(null); // Clear selection after removing
-      setSelectedColor(null); // Clear selected color
-      return;
-    }
     
+    // Place new color
     newGrid[y][x] = { ...newGrid[y][x], value: colorIndex };
-    setSelectedColor(colorIndex); // Set the selected color
+    setSelectedColor(colorIndex);
     
-    // Add animation using ref
+    // Add animation
     animatingCellsRef.current = [...animatingCellsRef.current, {
       row: y,
       col: x,
@@ -305,9 +324,8 @@ export function MejikuGame() {
     }];
     setTriggerRender(prev => prev + 1);
     
-    // Check if the placement is valid
+    // Check placement
     const isValid = checkPlacement(newGrid, y, x, colorIndex);
-    
     if (!isValid) {
       setErrorCell([x, y]);
     } else {
@@ -416,11 +434,11 @@ export function MejikuGame() {
         <CardContent className="p-2 flex justify-center">
           <div
             ref={containerRef}
-            className="border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            className="overflow-hidden"
             style={{ 
               width: isLayoutReady ? `${GRID_SIZE * cellSize + GRID_PADDING * 2}px` : 'auto',
               height: isLayoutReady ? `${GRID_SIZE * cellSize + GRID_PADDING * 2}px` : 'auto',
-              maxWidth: `calc(100% - ${CARD_PADDING}px)`
+              maxWidth: '100%'
             }}
           />
         </CardContent>
