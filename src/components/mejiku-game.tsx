@@ -91,7 +91,7 @@ export function MejikuGame() {
   const [cellSize, setCellSize] = useState(BASE_CELL_SIZE);
   const [errorCell, setErrorCell] = useState<[number, number] | null>(null);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const p5Instance = useRef<p5>();
+  const p5Instance = useRef<p5 | undefined>(undefined);
   const animatingCellsRef = useRef<AnimatingCell[]>([]);
   const [triggerRender, setTriggerRender] = useState(0);
 
