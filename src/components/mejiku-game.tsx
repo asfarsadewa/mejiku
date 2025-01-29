@@ -90,7 +90,7 @@ export function MejikuGame() {
   const [isComplete, setIsComplete] = useState(false);
   const [cellSize, setCellSize] = useState(BASE_CELL_SIZE);
   const [errorCell, setErrorCell] = useState<[number, number] | null>(null);
-  const errorTimeoutRef = useRef<NodeJS.Timeout>();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const p5Instance = useRef<p5>();
   const animatingCellsRef = useRef<AnimatingCell[]>([]);
   const [triggerRender, setTriggerRender] = useState(0);
@@ -441,7 +441,7 @@ function drawCells(
           color.value, 
           cell.value,
           cell.isFixed,
-          errorCell && errorCell[0] === col && errorCell[1] === row
+          errorCell && errorCell[0] === col && errorCell[1] === row || false
         );
       }
     }
@@ -480,7 +480,7 @@ function drawCellPattern(
   p.translate(center.x, center.y);
   
   // Base circle with potential error transparency
-  p.fill(isError ? p.color(color + '80') : color);
+  p.fill(isError ? p.color(color + '80') : p.color(color));
   p.noStroke();
   p.circle(0, 0, size * (isFixed ? 0.75 : 0.8));
   
