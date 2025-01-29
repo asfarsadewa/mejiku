@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mejiku - Color Sudoku Game
 
-## Getting Started
+Mejiku is a colorful twist on the classic Sudoku puzzle game. Instead of numbers 1-9, players use colors to solve the grid while following similar rules to traditional Sudoku.
 
-First, run the development server:
+## 🎮 Game Rules
 
+- Fill a 9x9 grid with colors
+- Each row must contain each color exactly once
+- Each column must contain each color exactly once
+- Each 3x3 sub-grid must contain each color exactly once
+- Pre-filled cells (marked with black borders) cannot be modified
+
+## 🎯 Features
+
+- Three difficulty levels: Easy, Medium, and Hard
+- Visual feedback for incorrect moves
+- Responsive design that works on desktop and mobile devices
+- Guaranteed unique solution for each puzzle
+- Real-time validation of moves
+- Celebration screen upon completion
+
+## 🛠️ Tech Stack
+
+- [Next.js 15](https://nextjs.org/) - React Framework
+- [React 19](https://react.dev/) - UI Library
+- [P5.js](https://p5js.org/) - Creative Coding Library
+- [Shadcn/ui](https://ui.shadcn.com/) - UI Components
+- [TypeScript](https://www.typescriptlang.org/) - Type Safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+
+## 🚀 Getting Started
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+git clone https://github.com/yourusername/mejiku.git
+cd mejiku
+```
+
+2. Install dependencies:
+```bash
+bun install
+```
+
+3. Run the development server:
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to play the game.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎨 Color Palette
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The game uses a carefully selected color palette that is:
+- Visually distinct
+- Accessible for color-blind users
+- Aesthetically pleasing
 
-## Learn More
+Colors used:
+- Red (#FF3B30)
+- Blue (#007AFF)
+- Yellow (#FFD60A)
+- Purple (#AF52DE)
+- Green (#34C759)
+- Orange (#FF9500)
+- Magenta (#9C1AB1)
+- Cyan (#32ADE6)
+- Brown (#8B572A)
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 Game Mechanics
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Click/tap an empty cell to select it
+- Click/tap a color from the palette to place it
+- Invalid placements will show a red highlight
+- Fixed cells (part of the initial puzzle) have black borders
+- The game is won when all cells are filled correctly
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🧩 Difficulty Levels
 
-## Deploy on Vercel
+- Easy: 40 cells to fill
+- Medium: 50 cells to fill
+- Hard: 60 cells to fill
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Each puzzle is guaranteed to have exactly one solution.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📱 Mobile Support
+
+The game is fully responsive and supports:
+- Touch interactions
+- Different screen sizes
+- Portrait and landscape orientations
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by classic Sudoku puzzles
+- Built with modern web technologies
+- Designed for accessibility and user experience
+
+## 🐛 Bug Reports
+
+If you find a bug, please open an issue with:
+1. Description of the bug
+2. Steps to reproduce
+3. Expected behavior
+4. Screenshots (if applicable)
