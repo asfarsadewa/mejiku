@@ -272,10 +272,12 @@ export function MejikuGame() {
             }
           };
 
-          // Add right click handler
-          p.contextMenu = (event: Event) => {
-            event.preventDefault();
-            return false;
+          // Prevent right click menu
+          p.mouseReleased = () => {
+            if (p.mouseButton === p.RIGHT) {
+              return false; // Prevents context menu
+            }
+            return true;
           };
         };
 
